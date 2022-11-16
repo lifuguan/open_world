@@ -94,7 +94,7 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = 'Test:'
     iou_types = tuple(k for k in ('segm', 'bbox') if k in postprocessors.keys())
-    coco_evaluator = OWEvaluator(base_ds, iou_types)
+    coco_evaluator = OWEvaluator(base_ds, iou_types, args=args)
  
     panoptic_evaluator = None
     if 'panoptic' in postprocessors.keys():

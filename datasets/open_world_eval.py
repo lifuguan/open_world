@@ -43,11 +43,14 @@ class OWEvaluator:
             self.unknown_class_index = self.total_num_class - 1
             self.num_seen_classes = self.prev_intro_cls + self.curr_intro_cls
             self.known_classes = self._class_names[:self.num_seen_classes]
+            print(self.known_classes)
             print("testing data details")
             print(self.total_num_class)
             print(self.unknown_class_index)
             print(self.known_classes)
             print(self.voc_gt.CLASS_NAMES)
+        else:
+            print("args is None")
 
 
     def update(self, predictions):
