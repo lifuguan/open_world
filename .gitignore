@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+model_zoo  
+*.out
+data/coco
+data/VOC2007
+exps/*

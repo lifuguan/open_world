@@ -354,12 +354,14 @@ def get_datasets(args):
 
 
 def set_dataset_path(args):
-    args.owod_path = os.path.join(args.data_root, 'VOC2007')
+    # args.owod_path = os.path.join(args.data_root, 'VOC2007')
+    args.owod_path = args.data_root
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Deformable DETR training and evaluation script', parents=[get_args_parser()])
     args = parser.parse_args()
     set_dataset_path(args)
+    print(args.owod_path, args.data_root)
     if args.output_dir:
         Path(args.output_dir).mkdir(parents=True, exist_ok=True)
     main(args)

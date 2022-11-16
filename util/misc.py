@@ -1,15 +1,6 @@
-# ------------------------------------------------------------------------
-# Deformable DETR
-# Copyright (c) 2020 SenseTime. All Rights Reserved.
-# Licensed under the Apache License, Version 2.0 [see LICENSE for details]
-# ------------------------------------------------------------------------
-# Modified from DETR (https://github.com/facebookresearch/detr)
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-# ------------------------------------------------------------------------
-
 """
 Misc functions, including distributed helpers.
-
 Mostly copy-paste from torchvision references.
 """
 import os
@@ -21,13 +12,13 @@ import pickle
 from typing import Optional, List
 
 import torch
-import torch.nn as nn
 import torch.distributed as dist
 from torch import Tensor
 
 # needed due to empty tensor bug in pytorch and torchvision 0.5
 import torchvision
-if float(torchvision.__version__[:3]) < 0.5:
+major_version, minor_version = torchvision.__version__.split('.')[:2]
+if float(major_version) < 1 and float(minor_version) < 5:
     import math
     from torchvision.ops.misc import _NewEmptyTensorOp
     def _check_size_scale_factor(dim, size, scale_factor):
@@ -54,10 +45,9 @@ if float(torchvision.__version__[:3]) < 0.5:
         return [
             int(math.floor(input.size(i + 2) * scale_factors[i])) for i in range(dim)
         ]
-elif float(torchvision.__version__[:3]) < 0.7:
+elif float(major_version) < 1 and float(minor_version) < 7:
     from torchvision.ops import _new_empty_tensor
     from torchvision.ops.misc import _output_size
-
 
 class SmoothedValue(object):
     """Track a series of values and provide access to smoothed values over a
@@ -421,20 +411,20 @@ def save_on_master(*args, **kwargs):
 
 
 def init_distributed_mode(args):
-    if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
+    if int(os.environ.get('DEBUG', '0')) == 0 and 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
         args.rank = int(os.environ["RANK"])
         args.world_size = int(os.environ['WORLD_SIZE'])
         args.gpu = int(os.environ['LOCAL_RANK'])
         args.dist_url = 'env://'
         os.environ['LOCAL_SIZE'] = str(torch.cuda.device_count())
-    elif 'SLURM_PROCID' in os.environ:
+    elif int(os.environ.get('DEBUG', '0')) == 0 and 'SLURM_PROCID' in os.environ:
         proc_id = int(os.environ['SLURM_PROCID'])
         ntasks = int(os.environ['SLURM_NTASKS'])
         node_list = os.environ['SLURM_NODELIST']
         num_gpus = torch.cuda.device_count()
         addr = subprocess.getoutput(
             'scontrol show hostname {} | head -n1'.format(node_list))
-        os.environ['MASTER_PORT'] = os.environ.get('MASTER_PORT', '29500')
+        os.environ['MASTER_PORT'] = str(29500)
         os.environ['MASTER_ADDR'] = addr
         os.environ['WORLD_SIZE'] = str(ntasks)
         os.environ['RANK'] = str(proc_id)
@@ -487,7 +477,7 @@ def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corne
     This will eventually be supported natively by PyTorch, and this
     class can go away.
     """
-    if float(torchvision.__version__[:3]) < 0.7:
+    if version.parse(torchvision.__version__) < version.Version('0.7'):
         if input.numel() > 0:
             return torch.nn.functional.interpolate(
                 input, size, scale_factor, mode, align_corners
@@ -495,9 +485,13 @@ def interpolate(input, size=None, scale_factor=None, mode="nearest", align_corne
 
         output_shape = _output_size(2, input, size, scale_factor)
         output_shape = list(input.shape[:-2]) + list(output_shape)
-        if float(torchvision.__version__[:3]) < 0.5:
+        major_version, minor_version = torchvision.__version__.split('.')[:2]
+        if float(major_version) < 1 and float(minor_version) < 5:        
             return _NewEmptyTensorOp.apply(input, output_shape)
-        return _new_empty_tensor(input, output_shape)
+        elif float(major_version) < 1 and float(minor_version) < 7:
+            return _new_empty_tensor(input, output_shape)
+        else:
+            return torch.empty(input, output_shape)
     else:
         return torchvision.ops.misc.interpolate(input, size, scale_factor, mode, align_corners)
 
@@ -515,4 +509,3 @@ def inverse_sigmoid(x, eps=1e-5):
     x1 = x.clamp(min=eps)
     x2 = (1 - x).clamp(min=eps)
     return torch.log(x1/x2)
-

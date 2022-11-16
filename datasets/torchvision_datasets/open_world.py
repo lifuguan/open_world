@@ -109,6 +109,7 @@ class OWDetection(VisionDataset):
                 valid_sets.append("test")
 
             # base_dir = DATASET_YEAR_DICT[year]['base_dir']
+            print(self.root)
             voc_root = self.root
             annotation_dir = os.path.join(voc_root, 'Annotations')
             image_dir = os.path.join(voc_root, 'JPEGImages')
