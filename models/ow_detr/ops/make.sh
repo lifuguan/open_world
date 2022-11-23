@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # ------------------------------------------------------------------------
 # OW-DETR: Open-world Detection Transformer
 # Akshita Gupta^, Sanath Narayan^, K J Joseph, Salman Khan, Fahad Shahbaz Khan, Mubarak Shah
@@ -7,6 +8,5 @@
 # Copyright (c) 2020 SenseTime. All Rights Reserved.
 # ------------------------------------------------------------------------
 
-from .ow_dab_detr import build_ow_dab_detr
-from .ow_detr import build_ow_detr
 
+python setup.py build install

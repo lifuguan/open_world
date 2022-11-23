@@ -1,0 +1,17 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "ow_dab_detr:train",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/main_open_world.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": ["--modelname", "ow_dab_detr", "--output_dir", "exps/OWDETR_t1", "--dataset", "owod", "--num_queries", "100", "--eval_every", "5", "--PREV_INTRODUCED_CLS","0", "--CUR_INTRODUCED_CLS", "19", "--data_root", "data/VOC2007/OWDETR", "--train_set", "t1_train", "--test_set", "test", "--num_classes", "81", "--unmatched_boxes", "--epochs", "45", "--top_unk", "5", "--featdim", "1024", "--NC_branch", "--nc_loss_coef", "0.1", "--nc_epoch", "9", "--backbone", "dino_resnet50"]
+        }
+    ]
+}

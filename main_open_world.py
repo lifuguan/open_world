@@ -24,17 +24,18 @@ from datasets import build_dataset, get_coco_api_from_dataset
 from datasets.coco import make_coco_transforms
 from datasets.torchvision_datasets.open_world import OWDetection
 from engine import evaluate, train_one_epoch, viz
-from models import build_model
+from models import build_ow_dab_detr, build_ow_detr
 
 
 def get_args_parser():
     parser = argparse.ArgumentParser('Deformable DETR Detector', add_help=False)
+    parser.add_argument('--modelname', '-m', type=str, required=True, choices=['ow_detr', 'ow_dab_detr'])
     parser.add_argument('--lr', default=2e-4, type=float)
     parser.add_argument('--lr_backbone_names', default=["backbone.0"], type=str, nargs='+')
     parser.add_argument('--lr_backbone', default=2e-5, type=float)
     parser.add_argument('--lr_linear_proj_names', default=['reference_points', 'sampling_offsets'], type=str, nargs='+')
     parser.add_argument('--lr_linear_proj_mult', default=0.1, type=float)
-    parser.add_argument('--batch_size', default=2, type=int)
+    parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--weight_decay', default=1e-4, type=float)
     parser.add_argument('--epochs', default=51, type=int)
     parser.add_argument('--lr_drop', default=40, type=int)
@@ -147,7 +148,14 @@ def main(args):
     np.random.seed(seed)
     random.seed(seed)
 
-    model, criterion, postprocessors = build_model(args)
+
+    if args.modelname.lower() == 'ow_detr':
+        model, criterion, postprocessors = build_ow_detr(args)
+    elif args.modelname.lower() == 'ow_dab_detr':
+        model, criterion, postprocessors = build_ow_dab_detr(args)
+    else:
+        raise NotImplementedError
+
     model.to(device)
 
     model_without_ddp = model

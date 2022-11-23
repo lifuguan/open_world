@@ -37,7 +37,10 @@ def _get_clones(module, N):
 class DeformableDETR(nn.Module):
     """ This is the Deformable DETR module that performs object detection """
     def __init__(self, backbone, transformer, num_classes, num_queries, num_feature_levels,
-                 aux_loss=True, with_box_refine=False, two_stage=False, 
+                 aux_loss=True, with_box_refine=False, two_stage=False,
+                 use_dab=True,
+                 num_patterns=0,
+                 random_refpoints_xy=False, 
                  unmatched_boxes=False, novelty_cls=False, featdim=1024):
         """ Initializes the model.
         Parameters:
@@ -59,7 +62,12 @@ class DeformableDETR(nn.Module):
         self.class_embed = nn.Linear(hidden_dim, num_classes)
         self.bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
         self.num_feature_levels = num_feature_levels
-        
+
+        # use DAB or not 
+        self.use_dab = use_dab
+        self.num_patterns = num_patterns
+        self.random_refpoints_xy = random_refpoints_xy
+
         ###
         self.featdim = featdim
         self.unmatched_boxes = unmatched_boxes
@@ -68,7 +76,17 @@ class DeformableDETR(nn.Module):
             self.nc_class_embed = nn.Linear(hidden_dim, 1)
 
         if not two_stage:
-            self.query_embed = nn.Embedding(num_queries, hidden_dim*2)
+            if not use_dab:
+                self.query_embed = nn.Embedding(num_queries, hidden_dim*2)
+            else:
+                self.tgt_embed = nn.Embedding(num_queries, hidden_dim)
+                self.refpoint_embed = nn.Embedding(num_queries, 4)
+                if random_refpoints_xy:
+                    # import ipdb; ipdb.set_trace()
+                    self.refpoint_embed.weight.data[:, :2].uniform_(0,1)
+                    self.refpoint_embed.weight.data[:, :2] = inverse_sigmoid(self.refpoint_embed.weight.data[:, :2])
+                    self.refpoint_embed.weight.data[:, :2].requires_grad = False
+
         if num_feature_levels > 1:
             num_backbone_outs = len(backbone.strides)
             input_proj_list = []
@@ -182,8 +200,24 @@ class DeformableDETR(nn.Module):
                 masks.append(mask)
                 pos.append(pos_l)
 
-        query_embeds = None
-        if not self.two_stage:
+
+        if self.two_stage:
+            query_embeds = None
+        elif self.use_dab:
+            if self.num_patterns == 0:
+                tgt_embed = self.tgt_embed.weight           # nq, 256
+                refanchor = self.refpoint_embed.weight      # nq, 4
+                query_embeds = torch.cat((tgt_embed, refanchor), dim=1)
+            else:
+                # multi patterns
+                tgt_embed = self.tgt_embed.weight           # nq, 256
+                pat_embed = self.patterns_embed.weight      # num_pat, 256
+                tgt_embed = tgt_embed.repeat(self.num_patterns, 1) # nq*num_pat, 256
+                pat_embed = pat_embed[:, None, :].repeat(1, self.num_queries, 1).flatten(0, 1) # nq*num_pat, 256
+                tgt_all_embed = tgt_embed + pat_embed
+                refanchor = self.refpoint_embed.weight.repeat(self.num_patterns, 1)      # nq*num_pat, 4
+                query_embeds = torch.cat((tgt_all_embed, refanchor), dim=1)
+        else:
             query_embeds = self.query_embed.weight
         
         hs, init_reference, inter_references, enc_outputs_class, enc_outputs_coord_unact = self.transformer(srcs, masks, pos, query_embeds)
@@ -659,7 +693,7 @@ class MLP(nn.Module):
         return x
 
 
-def build(args):
+def build_ow_dab_detr(args):
     num_classes = args.num_classes
     print(num_classes)
     if args.dataset == "coco_panoptic":
