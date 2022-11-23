@@ -5,13 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "env":{
+                "CUDA_VISIBLE_DEVICES":"1"
+            },       
             "name": "ow_dab_detr:train",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/main_open_world.py",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "args": ["--modelname", "ow_dab_detr", "--output_dir", "exps/OWDETR_t1", "--dataset", "owod", "--num_queries", "100", "--eval_every", "5", "--PREV_INTRODUCED_CLS","0", "--CUR_INTRODUCED_CLS", "19", "--data_root", "data/VOC2007/OWDETR", "--train_set", "t1_train", "--test_set", "test", "--num_classes", "81", "--unmatched_boxes", "--epochs", "45", "--top_unk", "5", "--featdim", "1024", "--NC_branch", "--nc_loss_coef", "0.1", "--nc_epoch", "9", "--backbone", "dino_resnet50"]
+            "args": ["--modelname", "ow_dab_detr", "--output_dir", "exps/OWDETR_t1", "--dataset", "owod", "--num_queries", "100", "--eval_every", "5", "--PREV_INTRODUCED_CLS","0", "--CUR_INTRODUCED_CLS", "19", "--data_root", "data/VOC2007/OWDETR", "--train_set", "t1_train", "--test_set", "test", "--num_classes", "81", "--unmatched_boxes", "--epochs", "45", "--top_unk", "5", "--featdim", "1024", "--NC_branch", "--nc_loss_coef", "0.1", "--nc_epoch", "0", "--backbone", "dino_resnet50", "--batch_size", "1"]
         }
     ]
 }

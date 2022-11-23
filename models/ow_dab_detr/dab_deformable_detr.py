@@ -34,7 +34,7 @@ def _get_clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
 
 
-class DeformableDETR(nn.Module):
+class DABDeformableDETR(nn.Module):
     """ This is the Deformable DETR module that performs object detection """
     def __init__(self, backbone, transformer, num_classes, num_queries, num_feature_levels,
                  aux_loss=True, with_box_refine=False, two_stage=False,
@@ -518,7 +518,7 @@ class SetCriterion(nn.Module):
                 h, w = img.shape[:-1]
                 img_w = torch.tensor(w, device=owod_device)
                 img_h = torch.tensor(h, device=owod_device)
-                unmatched_boxes = box_ops.box_cxcywh_to_xyxy(boxes)
+                unmatched_boxes = box_ops.box_cxcywh_to_xyxy(boxes)   # 都是detr推理出的bbox
                 unmatched_boxes = unmatched_boxes * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32).to(owod_device)
                 means_bb = torch.zeros(queries.shape[0]).to(unmatched_boxes)
                 bb = unmatched_boxes
@@ -527,11 +527,11 @@ class SetCriterion(nn.Module):
                         upsaple = nn.Upsample(size=(img_h,img_w), mode='bilinear')
                         img_feat = upsaple(res_feat[i].unsqueeze(0).unsqueeze(0))
                         img_feat = img_feat.squeeze(0).squeeze(0)
-                        xmin = bb[j,:][0].long()
+                        xmin = bb[j,:][0].long()  # 都是detr推理出的 没有匹配within class的 bbox
                         ymin = bb[j,:][1].long()
                         xmax = bb[j,:][2].long()
                         ymax = bb[j,:][3].long()
-                        means_bb[j] = torch.mean(img_feat[ymin:ymax,xmin:xmax])
+                        means_bb[j] = torch.mean(img_feat[ymin:ymax,xmin:xmax])   # 从mask里裁剪ROI并求取平均激活值
                         if torch.isnan(means_bb[j]):
                             means_bb[j] = -10e10
                     else:
@@ -710,7 +710,7 @@ def build_ow_dab_detr(args):
     invalid_cls_logits = list(range(seen_classes, num_classes-1)) #unknown class indx will not be included in the invalid class range
     print("Invalid class rangw: " + str(invalid_cls_logits))
 
-    model = DeformableDETR(
+    model = DABDeformableDETR(
         backbone,
         transformer,
         num_classes=num_classes,
